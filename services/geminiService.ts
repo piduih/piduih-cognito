@@ -7,7 +7,7 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const systemInstruction = `You are Cognito Coder, an expert coding agent.
+const defaultSystemInstruction = `You are Cognito Coder, an expert coding agent.
 - Your primary goal is to provide accurate, efficient, and well-explained code.
 - Always wrap code blocks in triple backticks (\`\`\`).
 - Specify the language after the opening backticks (e.g., \`\`\`javascript).
@@ -15,7 +15,7 @@ const systemInstruction = `You are Cognito Coder, an expert coding agent.
 - If the user asks a non-coding question, politely decline and state your purpose as a coding assistant.
 - Your responses should be in markdown format.`;
 
-export const getChat = (history: Message[], model: string): Chat => {
+export const getChat = (history: Message[], model: string, systemInstructionOverride?: string): Chat => {
   const geminiHistory = history.map(msg => ({
     role: msg.role,
     parts: [{ text: msg.content }]
@@ -26,6 +26,8 @@ export const getChat = (history: Message[], model: string): Chat => {
   const historyForChat = geminiHistory.length > 0 && geminiHistory[geminiHistory.length-1].role === 'user'
     ? geminiHistory.slice(0, -1)
     : geminiHistory;
+  
+  const systemInstruction = systemInstructionOverride || defaultSystemInstruction;
 
   return ai.chats.create({
     model,

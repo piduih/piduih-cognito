@@ -1,6 +1,7 @@
 export interface Message {
   role: 'user' | 'model';
   content: string;
+  error?: string;
 }
 
 export interface ChatSession {
@@ -8,4 +9,5 @@ export interface ChatSession {
   title: string;
   messages: Message[];
   model: string;
+  systemInstruction?: string;
 }

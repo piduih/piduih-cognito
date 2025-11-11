@@ -7,7 +7,10 @@
 ## Key Features
 
 - **Conversational Chat UI**: An intuitive, message-based interface for natural, context-aware dialogue with the AI.
-- **Smart & Persistent History**: Chat sessions are automatically saved to `localStorage`. New chats are intelligently titled, and users can easily revisit or delete past conversations.
+- **Smart & Persistent History**: Chat sessions are automatically saved to `localStorage`. New chats are intelligently titled, and users can easily revisit, delete, and search past conversations.
+- **Searchable Chat History**: A real-time search bar allows for quick filtering and retrieval of past chat sessions.
+- **Enhanced Error Handling**: API errors are handled gracefully with an inline error message and a "Try Again" button, preventing workflow disruption.
+- **Customizable System Prompts**: Users can edit the AI's core instructions for each chat, tailoring its expertise and personality to specific tasks.
 - **Fully Responsive Design**: The application is mobile-first, featuring a collapsible overlay sidebar that ensures a seamless experience on any device, from phones to desktops.
 - **Advanced Code Rendering**: The AI's responses are intelligently parsed to separate explanations from code. Code snippets are displayed in dedicated blocks with syntax highlighting and a one-click "Copy" button.
 - **User-Centric Controls**:

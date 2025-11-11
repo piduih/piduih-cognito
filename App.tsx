@@ -7,14 +7,16 @@ import SearchBar from './components/SearchBar';
 import SidebarToggle from './components/SidebarToggle';
 import { ChatSession, Message } from './types';
 import ContextMeter from './components/ContextMeter';
+import SettingsIcon from './components/icons/SettingsIcon';
+import SettingsModal from './components/SettingsModal';
 
 const App: React.FC = () => {
   const [history, setHistory] = useState<ChatSession[]>([]);
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => window.innerWidth >= 1024);
   const [lastUsedModel, setLastUsedModel] = useState<string>('gemini-2.5-flash');
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const stopGenerationRef = useRef(false);
 
   useEffect(() => {
@@ -73,7 +75,6 @@ const App: React.FC = () => {
     if (!activeSession) return;
 
     setIsLoading(true);
-    setError(null);
     stopGenerationRef.current = false;
 
     const updatedMessages: Message[] = [...activeSession.messages, { role: 'user', content: message }];
@@ -83,7 +84,7 @@ const App: React.FC = () => {
     const isNewSession = !history.some(s => s.id === currentSession.id);
 
     try {
-        const chat = getChat(currentSession.messages, currentSession.model);
+        const chat = getChat(currentSession.messages, currentSession.model, currentSession.systemInstruction);
         const responseStream = await sendMessageAndGetStream(chat, message);
         
         let fullResponse = '';
@@ -119,11 +120,17 @@ const App: React.FC = () => {
         setActiveSession(currentSession);
 
     } catch (e) {
-        if (e instanceof Error) {
-            setError(e.message);
-        } else {
-            setError('An unexpected error occurred.');
-        }
+        const errorMessage = e instanceof Error ? e.message : 'An unexpected error occurred.';
+        setActiveSession(prev => {
+          if (!prev) return null;
+          const errorMsg: Message = { role: 'model', content: '', error: errorMessage };
+          const messagesWithUser = prev.messages.filter(m => m.role === 'user');
+          const messagesWithPrevModel = prev.messages.filter(m => m.role === 'model' && !m.error);
+          return {
+            ...prev,
+            messages: [...messagesWithUser, ...messagesWithPrevModel, errorMsg]
+          }
+        });
     } finally {
         setIsLoading(false);
         stopGenerationRef.current = false;
@@ -140,7 +147,7 @@ const App: React.FC = () => {
     const lastUserMessage = [...activeSession.messages].reverse().find(m => m.role === 'user');
     if (!lastUserMessage) return;
 
-    // Remove the last model response if it exists
+    // Remove the last model response if it exists (whether it's an error or a valid response)
     const historyWithoutLastAnswer = activeSession.messages.filter((m, i) => 
       !(m.role === 'model' && i === activeSession.messages.length - 1)
     );
@@ -155,6 +162,13 @@ const App: React.FC = () => {
 
   }, [activeSession, isLoading, handleSendMessage]);
 
+  const handleUpdateSystemInstruction = (newInstruction: string) => {
+    if (!activeSession) return;
+    const updatedSession = { ...activeSession, systemInstruction: newInstruction };
+    setActiveSession(updatedSession);
+    saveChatSession(updatedSession);
+    setIsSettingsModalOpen(false);
+  }
 
   return (
     <div className="h-screen bg-slate-50 flex text-slate-800 overflow-hidden">
@@ -183,18 +197,15 @@ const App: React.FC = () => {
             </div>
             {activeSession && (
                 <div className="pr-2 flex-shrink-0 flex items-center gap-4">
+                    <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 rounded-full hover:bg-slate-200 transition-colors" title="Chat Settings">
+                        <SettingsIcon className="h-5 w-5 text-slate-600" />
+                    </button>
                     {activeSession.messages.length > 0 && <ContextMeter messages={activeSession.messages} />}
                 </div>
             )}
         </header>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-             {error && (
-                <div className="text-center my-4 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg max-w-4xl mx-auto w-full">
-                <p className="font-bold">An error occurred</p>
-                <p>{error}</p>
-                </div>
-            )}
             {activeSession ? (
                 <ChatView 
                     messages={activeSession.messages} 
@@ -210,6 +221,14 @@ const App: React.FC = () => {
             <SearchBar onSendMessage={handleSendMessage} isLoading={isLoading} onStop={handleStopGeneration}/>
         </main>
       </div>
+       {isSettingsModalOpen && activeSession && (
+        <SettingsModal 
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            onSave={handleUpdateSystemInstruction}
+            currentInstruction={activeSession.systemInstruction}
+        />
+      )}
     </div>
   );
 };

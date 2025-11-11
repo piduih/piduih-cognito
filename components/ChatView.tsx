@@ -29,6 +29,20 @@ const parseResponse = (content: string) => {
     }).filter(p => p.content.trim() !== '');
 };
 
+const ErrorMessage: React.FC<{ error: string; onRetry: () => void }> = ({ error, onRetry }) => (
+    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800">
+        <p className="font-bold mb-2">An error occurred</p>
+        <p className="text-sm mb-4">{error}</p>
+        <button 
+            onClick={onRetry} 
+            className="px-4 py-1 bg-red-500 text-white text-sm font-semibold rounded-md hover:bg-red-600 transition-colors"
+        >
+            Try Again
+        </button>
+    </div>
+);
+
+
 const ChatView: React.FC<ChatViewProps> = ({ messages, isLoading, onSuggestionClick, onRegenerate }) => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +68,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isLoading, onSuggestionCl
     <div className="flex-1 overflow-y-auto p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         {messages.map((message, index) => {
-          const parsedParts = message.role === 'model' ? parseResponse(message.content) : [];
+          const parsedParts = message.role === 'model' && !message.error ? parseResponse(message.content) : [];
           const isLastModelMessage = message.role === 'model' && index === messages.length - 1;
           
           return (
@@ -71,12 +85,14 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isLoading, onSuggestionCl
                   className={`p-4 rounded-xl shadow-sm ${
                     message.role === 'user'
                       ? 'bg-indigo-500 text-white'
-                      : 'bg-white border border-slate-200 text-slate-800'
+                      : message.error ? '' : 'bg-white border border-slate-200 text-slate-800'
                   }`}
                   style={{ maxWidth: '90vw' }}
                 >
                   {message.role === 'user' ? (
                     <p className="whitespace-pre-wrap">{message.content}</p>
+                  ) : message.error ? (
+                     <ErrorMessage error={message.error} onRetry={onRegenerate} />
                   ) : (
                     <div className="text-slate-700 leading-relaxed space-y-4">
                       {parsedParts.map(part =>
@@ -89,7 +105,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isLoading, onSuggestionCl
                     </div>
                   )}
                 </div>
-                {isLastModelMessage && !isLoading && (
+                {isLastModelMessage && !isLoading && !message.error && (
                   <button onClick={onRegenerate} className="mt-2 p-1.5 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors opacity-0 group-hover:opacity-100" title="Regenerate response">
                     <RegenerateIcon className="h-4 w-4" />
                   </button>

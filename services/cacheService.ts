@@ -6,10 +6,11 @@ export const getChatHistory = (): ChatSession[] => {
   try {
     const historyJson = localStorage.getItem(HISTORY_KEY);
     const sessions = historyJson ? JSON.parse(historyJson) : [];
-    // Backwards compatibility for sessions saved before model selection was added
+    // Backwards compatibility for sessions saved before new properties were added
     return sessions.map((session: any) => ({
       ...session,
       model: session.model || 'gemini-2.5-flash',
+      systemInstruction: session.systemInstruction || undefined,
     }));
   } catch (error) {
     console.error('Error reading chat history from localStorage:', error);
