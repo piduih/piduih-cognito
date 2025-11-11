@@ -1,0 +1,5 @@
+{
+  "name": "Cognito Search",
+  "description": "An advanced search engine powered by Gemini, providing synthesized answers and grounded sources from the web.",
+  "requestFramePermissions": []
+}
